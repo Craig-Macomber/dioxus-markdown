@@ -123,10 +123,10 @@ impl<'a> CustomComponents {
     }
 }
 
-impl<'a> Context<'a, 'a> for MdContext {
+impl<'a> Context<'a, 'static> for  &'a MdContext {
     type View = Element;
 
-    type Handler<T: 'a> = EventHandler<T>;
+    type Handler<T: 'static> = EventHandler<T>;
 
     type MouseEvent = MouseEvent;
 
@@ -335,7 +335,7 @@ impl<'a> Context<'a, 'a> for MdContext {
     }
 
     fn props(self) -> rust_web_markdown::MarkdownProps<'a> {
-        let props = self.0.read().clone();
+        let props: &'a MdProps = &*self.0.read();
 
         rust_web_markdown::MarkdownProps {
             hard_line_breaks: props.hard_line_breaks,
@@ -345,7 +345,7 @@ impl<'a> Context<'a, 'a> for MdContext {
         }
     }
 
-    fn call_handler<T: 'a>(callback: &Self::Handler<T>, input: T) {
+    fn call_handler<T: 'static>(callback: &Self::Handler<T>, input: T) {
         callback.call(input)
     }
 
@@ -371,11 +371,11 @@ impl<'a> Context<'a, 'a> for MdContext {
     }
 
     fn set_frontmatter(self, frontmatter: String) {
-        self.0
-            .read()
-            .frontmatter
-            .as_ref()
-            .map(|x| x.set(frontmatter));
+        let props =  self.0.read();
+        let format =  props.frontmatter;
+        if let Some(mut f) = format {
+            *f.write() = frontmatter;
+        }
     }
 
     fn has_custom_links(self) -> bool {
